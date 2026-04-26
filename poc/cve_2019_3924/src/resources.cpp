@@ -176,10 +176,11 @@ int main(int p_argc, const char** p_argv)
     std::cout << "[+] Connected!" << std::endl;
 
     int common_ports[] = {21, 22, 23, 80, 443, 8291};
+    int targets[] = {1, 10, 11, 100}
 
     std::cout << "[+] Starting deep service scan on 192.168.99.0/24..." << std::endl;
 
-    for (int i = 1; i <=110; i+=20) {
+    for (int i : targets) {
         std::string current_target = "192.168.99." + std::to_string(i);
         boost::uint32_t converted_address = ntohl(inet_network(current_target.c_str()));
 
