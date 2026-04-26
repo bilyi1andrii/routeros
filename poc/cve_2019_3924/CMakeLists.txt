@@ -21,3 +21,12 @@ add_executable(${PROJECT_NAME}
     ../../common/winbox_message.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} pthread)
+
+add_executable(resource_scan
+    src/resources.cpp
+    ../../common/md5.cpp
+    ../../common/session.cpp
+    ../../common/winbox_session.cpp
+    ../../common/winbox_message.cpp)
+
+target_link_libraries(resource_scan ${Boost_LIBRARIES} pthread)
