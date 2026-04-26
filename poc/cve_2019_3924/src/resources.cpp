@@ -140,6 +140,8 @@ namespace
     }
 
 
+}
+
 int main(int p_argc, const char** p_argv)
 {
     bool detect_only = false;
