@@ -125,7 +125,8 @@ namespace
 
         if (!session.receive(msg))
         {
-            std::cerr << "Error receiving a response." << std::endl;
+            std::cerr << "[-] Connection lost. Attempting to reconnect..." << std::endl;
+            session.connect();
             return false;
         }
 
