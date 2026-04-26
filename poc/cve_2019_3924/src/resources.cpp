@@ -125,8 +125,7 @@ namespace
 
         if (!session.receive(msg))
         {
-            std::cerr << "[-] Connection lost. Attempting to reconnect..." << std::endl;
-            session.connect();
+            std::cerr << "Error receiving a response." << std::endl;
             return false;
         }
 
@@ -179,7 +178,7 @@ int main(int p_argc, const char** p_argv)
 
     std::cout << "[+] Starting deep service scan on 192.168.99.0/24..." << std::endl;
 
-    for (int i = 95; i <=120; ++i) {
+    for (int i = 1; i <=110; i+=20) {
         std::string current_target = "192.168.99." + std::to_string(i);
         boost::uint32_t converted_address = ntohl(inet_network(current_target.c_str()));
 
