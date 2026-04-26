@@ -107,7 +107,7 @@ namespace
     }
 
     bool find_nvrmini2(Winbox_Session& session,
-                       std::string& p_address, boost::uint32_t p_converted_address,
+                       boost::uint32_t p_converted_address,
                        boost::uint32_t p_converted_port)
     {
         WinboxMessage msg;
@@ -184,7 +184,7 @@ int main(int p_argc, const char** p_argv)
 
         for (int port : common_ports) {
             // We temporarily modify the check function to be less picky
-            if (find_nvrmini2(winboxSession, current_target, converted_address, port)) {
+            if (find_nvrmini2(winboxSession, converted_address, port)) {
                 std::cout << "[!] DISCOVERY: Service found at " << current_target << " on port " << port << std::endl;
             }
             usleep(50000);
