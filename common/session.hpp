@@ -31,6 +31,7 @@
 #define SESSION_HPP
 
 #include <string>
+#include <chrono>
 #include <boost/asio.hpp>
 
 class WinboxMessage;
@@ -68,13 +69,13 @@ protected:
     std::string m_port;
 
     //! the IO service associated with our blocking socket
-    boost::asio::io_service m_io_service;
+    boost::asio::io_context m_io_service;
 
     //! the blocking socket we use for communication
     boost::asio::ip::tcp::socket m_socket;
 
     //! Timer to use with async socket operations
-    boost::asio::deadline_timer m_deadline;
+    boost::asio::steady_timer m_deadline;
 };
 
 #endif

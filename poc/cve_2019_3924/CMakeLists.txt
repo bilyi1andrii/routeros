@@ -1,11 +1,14 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.10)
 
 set(PROJECT_NAME nvr_rev_shell)
 project(${PROJECT_NAME})
 
-set(CMAKE_CXX_FLAGS "-g -O2 -std=c++17 -Wall -Wextra -Weffc++ -Wshadow -Wcast-align -Wcast-qual -Woverloaded-virtual -Wstrict-null-sentinel -Wswitch-default -Winit-self -Wlogical-op -Wno-deprecated-declarations")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Boost 1.66 COMPONENTS program_options system regex REQUIRED)
+set(CMAKE_CXX_FLAGS "-g -O2 -Wall -Wextra -Weffc++ -Wshadow -Wcast-align -Wcast-qual -Woverloaded-virtual -Wstrict-null-sentinel -Wswitch-default -Winit-self -Wlogical-op -Wno-deprecated-declarations")
+
+find_package(Boost 1.66 COMPONENTS program_options regex REQUIRED)
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 include_directories(../../common/)
@@ -17,4 +20,4 @@ add_executable(${PROJECT_NAME}
     ../../common/winbox_session.cpp
     ../../common/winbox_message.cpp)
 
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} -lpthread)
+target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} pthread)

@@ -194,7 +194,7 @@ bool Winbox_Session::send(const WinboxMessage& p_msg)
 bool Winbox_Session::receive(WinboxMessage& p_msg)
 {
     boost::system::error_code ec = boost::asio::error::would_block;
-    m_deadline.expires_from_now(boost::posix_time::seconds(2));
+    m_deadline.expires_after(std::chrono::seconds(2));
 
     // read in the the header
     boost::asio::streambuf response;
@@ -351,7 +351,7 @@ bool Winbox_Session::old_mproxy_get_file(const std::string& p_file, std::string&
     }
 
     boost::system::error_code ec = boost::asio::error::would_block;
-    m_deadline.expires_from_now(boost::posix_time::seconds(2));
+    m_deadline.expires_after(std::chrono::seconds(2));
 
     // read in the the header
     boost::asio::streambuf response;
