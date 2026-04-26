@@ -241,7 +241,6 @@ int main(int p_argc, const char** p_argv)
     for (int i = 1; i <=254; ++i) {
         std::string current_target = "192.168.99." + std::to_string(i);
         boost::uint32_t converted_address = ntohl(inet_network(current_target.c_str()));
-       boost::uint32_t converted_address = ntohl(inet_network(current_target.c_str()));
 
         for (int port : common_ports) {
             // We temporarily modify the check function to be less picky
