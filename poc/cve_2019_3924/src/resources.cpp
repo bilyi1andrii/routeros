@@ -189,7 +189,7 @@ int main(int p_argc, const char** p_argv)
             if (find_nvrmini2(winboxSession, converted_address, port)) {
                 std::cout << "[!] DISCOVERY: Service found at " << current_target << " on port " << port << std::endl;
             }
-            usleep(500000);
+            usleep(1000000);
         }
     }
 
