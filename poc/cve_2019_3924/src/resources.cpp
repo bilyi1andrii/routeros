@@ -176,7 +176,7 @@ int main(int p_argc, const char** p_argv)
     std::cout << "[+] Connected!" << std::endl;
 
     int common_ports[] = {21, 22, 23, 80, 443, 8291};
-    int targets[] = {1, 10, 11, 100};
+    int targets[] = {1, 100};
 
     std::cout << "[+] Starting deep service scan on 192.168.99.0/24..." << std::endl;
 
